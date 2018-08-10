@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Program Neo Facebook Login</title>
+  <script
+  src="https://code.jquery.com/jquery-3.3.1.min.js"
+  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+  crossorigin="anonymous"></script>
+</head>
+<body>
+  <script>  
+  function checkLoginState() {
+    var url = "https://graph.facebook.com/v3.1/oauth/access_token?grant_type=fb_exchange_token&client_id=187386455201066&client_secret=f1832cfcb561e244ede7b84c78c7e14b&fb_exchange_token="
+
+    FB.getLoginStatus(function(response) {
+      console.log(response);
+      // statusChangeCallback(response);
+      if (response.status === 'connected') {
+        console.log(response.authResponse.accessToken);
+        document.getElementById("fb_access_token_short_lived").innerHTML = "Facebook Access Token Short Lived: " + response.authResponse.accessToken;
+        url = url + response.authResponse.accessToken;
+        $.ajax({
+            url: url,
+            method: 'GET',
+            success: function (data) {
+                console.log(data);              
+                document.getElementById("fb_access_token_long_lived").innerHTML = "Facebook Access Token Long Lived: " + data.access_token;
+            },
+            error: function (error) {
+                console.log(error);
+                document.getElementById("fb_access_token_long_lived").innerHTML = "Facebook Access Token Long Lived: " + error;
+            }
+        });
+      }
+    });
+  }
+
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '187386455201066',
+      cookie     : true,
+      xfbml      : true,
+      version    : 'v3.1'
+    });
+      
+    FB.AppEvents.logPageView();
+  };
+
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "https://connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));  
+  </script>
+
+
+  <fb:login-button 
+    scope="public_profile,user_hometown,user_location,user_likes,user_events,user_photos,user_friends,user_status,user_tagged_places,user_posts,user_gender,user_link,user_age_range,email,read_insights,read_audience_network_insights,pages_show_list,instagram_basic,groups_access_member_info,leads_retrieval,user_birthday"
+    onlogin="checkLoginState();">
+  </fb:login-button>
+  <div id="fb_access_token_short_lived"></div><br/>
+  <div id="fb_access_token_long_lived"></div>
+</body>
+</html>
