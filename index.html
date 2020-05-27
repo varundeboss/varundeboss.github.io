@@ -1,75 +1,717 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Program Neo Facebook Login</title>
-  <script
-  src="https://code.jquery.com/jquery-3.3.1.min.js"
-  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
-  crossorigin="anonymous"></script>
-</head>
-<body>
-  <script>  
-  function checkLoginState() {
-    var url = "https://graph.facebook.com/v3.1/oauth/access_token?grant_type=fb_exchange_token&client_id=187386455201066&client_secret=f1832cfcb561e244ede7b84c78c7e14b&fb_exchange_token="
+<!doctype html>
+<!--
+  Material Design Lite
+  Copyright 2015 Google Inc. All rights reserved.
 
-    FB.getLoginStatus(function(response) {
-      console.log(response);
-      // statusChangeCallback(response);
-      if (response.status === 'connected') {
-        console.log(response.authResponse.accessToken);
-        document.getElementById("fb_access_token_short_lived").innerHTML = "Facebook Access Token Short Lived: " + response.authResponse.accessToken;
-        url = url + response.authResponse.accessToken;
-        $.ajax({
-            url: url,
-            method: 'GET',
-            contentType: "application/json",
-            dataType: 'json',
-            crossDomain: true,
-            headers: {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST,GET,PUT,DELETE,OPTIONS',
-                'Accept': 'application/json',            
-            },
-            success: function (data) {
-                console.log(data);              
-                document.getElementById("fb_access_token_long_lived").innerHTML = "Facebook Access Token Long Lived: " + data.access_token;
-            },
-            error: function (error) {
-                console.log(error);
-                document.getElementById("fb_access_token_long_lived").innerHTML = "Facebook Access Token Long Lived: " + error;
-            }
-        });
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      https://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="A front-end template that helps you build fast, modern mobile web apps.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <title>CDF Dashboard</title>
+
+    <!-- Add to homescreen for Chrome on Android -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="icon" sizes="192x192" href="images/android-desktop.png">
+
+    <!-- Add to homescreen for Safari on iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Material Design Lite">
+    <link rel="apple-touch-icon-precomposed" href="images/ios-desktop.png">
+
+    <!-- Tile icon for Win8 (144x144 + tile color) -->
+    <meta name="msapplication-TileImage" content="images/touch/ms-touch-icon-144x144-precomposed.png">
+    <meta name="msapplication-TileColor" content="#3372DF">
+
+    <link rel="shortcut icon" href="https://www.crayondata.com/images/favicon.ico">
+
+    <!-- SEO: If your mobile URL is different from the desktop URL, add a canonical link to the desktop page https://developers.google.com/webmasters/smartphone-sites/feature-phones -->
+    <!--
+    <link rel="canonical" href="http://www.example.com/">
+    -->
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=en">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <!-- <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.deep_purple-pink.min.css"> -->
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.blue-red.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/material-components-web/4.0.0/material-components-web.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/dataTables.material.min.css" />
+    <link rel="stylesheet" href="styles.css">
+
+    <script type="text/javascript" src="lib/axios/dist/axios.standalone.js"></script>
+    <script type="text/javascript" src="lib/CryptoJS/rollups/hmac-sha256.js"></script>
+    <script type="text/javascript" src="lib/CryptoJS/rollups/sha256.js"></script>
+    <script type="text/javascript" src="lib/CryptoJS/components/hmac.js"></script>
+    <script type="text/javascript" src="lib/CryptoJS/components/enc-base64.js"></script>
+    <script type="text/javascript" src="lib/url-template/url-template.js"></script>
+    <script type="text/javascript" src="lib/apiGatewayCore/sigV4Client.js"></script>
+    <script type="text/javascript" src="lib/apiGatewayCore/apiGatewayClient.js"></script>
+    <script type="text/javascript" src="lib/apiGatewayCore/simpleHttpClient.js"></script>
+    <script type="text/javascript" src="lib/apiGatewayCore/utils.js"></script>
+    <script type="text/javascript" src="apigClient.js"></script>
+    <style>
+    #view-source {
+      position: fixed;
+      display: block;
+      right: 0;
+      bottom: 0;
+      margin-bottom: 1%;
+      margin-right: 1%;
+      z-index: 900;
+    }
+    .mdl-button--file input {
+      cursor: pointer;
+      height: 100%;
+      right: 0;
+      opacity: 0;
+      position: absolute;
+      top: 0;
+      width: 300px;
+      z-index: 4;
+    }
+    .mdl-textfield--file .mdl-textfield__input {
+      box-sizing: border-box;
+      width: calc(100% - 32px);
+    }
+    .mdl-textfield--file .mdl-button--file {
+      right: 0;
+    }
+
+    .block_button {
+      display: block;
+      width: 100%;
+      border: none;
+      /*background-color: rgb(255,0,0);*/
+      /*color: green;*/
+      /*padding: 14px 28px;*/
+      /*font-size: 16px;*/
+      /*cursor: pointer;*/
+      /*text-align: center;*/
+    }
+    </style>
+    <script src="jquery-3.5.1.min.js"></script>
+  </head>
+  <body class="mdl-demo mdl-color--white-100 mdl-color-text--white-700 mdl-base" onload="get_workflow_runs()">
+    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+      <header class="mdl-layout__header mdl-layout__header--scroll mdl-color--primary">
+        <!-- <div class="mdl-layout--large-screen-only mdl-layout__header-row">
+        </div> -->
+        <div class="mdl-layout--large-screen-only mdl-layout__header-row">
+          <!-- <h3>Name &amp; Title</h3> -->
+          <h3>CDF Dashboard</h3>
+        </div>
+        <!-- <div class="mdl-layout--large-screen-only mdl-layout__header-row">
+        </div> -->
+        <div class="mdl-layout__tab-bar mdl-js-ripple-effect mdl-color--primary-dark">
+          <a href="#onboard" id="a_onboard" class="mdl-layout__tab is-active">Onboard</a>
+          <a href="#jobs" id="a_jobs" class="mdl-layout__tab">Jobs</a>
+          <!-- <a href="#features" class="mdl-layout__tab">Details</a>
+          <a href="#features" class="mdl-layout__tab">Technology</a>
+          <a href="#features" class="mdl-layout__tab">FAQ</a> -->
+          <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored mdl-shadow--4dp mdl-color--accent" id="add" onclick="refresh_dom()">
+            <i class="material-icons" role="presentation">refresh</i>
+            <span class="visuallyhidden">Add</span>
+          </button>
+        </div>
+      </header>
+      <main class="mdl-layout__content">
+        <div class="mdl-layout__tab-panel is-active" id="onboard">
+          <section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--2dp">
+            <div class="mdl-card mdl-cell mdl-cell--12-col">
+              <div class="mdl-card__supporting-text">
+                <h4>Onboard Data</h4>
+                <p>Fill the following details and click <b>SCHEDULE</b> to onboard and/or stage the raw data into CDF</p>                
+                <form id="schedule_form">
+                  <table>
+                    <tr>
+                      <td>
+                        <div>Select the operations that you would like to perform: </div>                        
+                      </td>
+                      <td>
+                        <label class = "mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for = "onboard_checkbox">
+                          <input type = "checkbox" id = "onboard_checkbox"
+                             class = "mdl-checkbox__input" onclick="show_form(this);">
+                          <span class = "mdl-checkbox__label">Onboard</span>
+                        </label>
+                        <div class="mdl-tooltip" data-mdl-for="onboard_checkbox">
+                           Lets you onboard raw data into Crayon Data Lake (CDL)
+                        </div>
+                      </td>
+                      <td></td>
+                      <td>
+                        <label class = "mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for = "stage_checkbox">
+                          <input type = "checkbox" id = "stage_checkbox"
+                             class = "mdl-checkbox__input" onclick="show_form(this);">
+                          <span class = "mdl-checkbox__label">Stage</span>
+                        </label>
+                      </td>
+                    </tr>
+                  </table>                                  
+
+                  <!-- <div id="onboard_form"></div>
+                  <div id="stage_form"></div> -->
+
+                  <div id="cdf_form"></div>
+
+                  <div class="mdl-card__actions">
+                    <!-- <a href="#" class="mdl-button">Read our features</a> -->
+                    
+                  <button type='button' value='schedule' id="schedule" class="section--center mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-color--green-400 block_button" onclick="schedule_loading_spinner()">
+                    schedule
+                  </button>
+                  
+                  <div id="schedule_area"></div>
+                  </div>                  
+                </form>
+              </div>
+            </div>
+            <!-- <button class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon" id="btn3">
+              <i class="material-icons">more_vert</i>
+            </button>
+            <ul class="mdl-menu mdl-js-menu mdl-menu--bottom-right" for="btn3">
+              <li class="mdl-menu__item">Lorem</li>
+              <li class="mdl-menu__item" disabled>Ipsum</li>
+              <li class="mdl-menu__item">Dolor</li>
+            </ul> -->
+          </section>
+        </div>
+
+        <div class="mdl-layout__tab-panel" id="jobs">          
+          <section class="section--left mdl-grid mdl-grid--no-spacing">            
+            <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" style="width:100%;" id="jobs_table">              
+              <thead>
+                <tr>
+                  <th style='text-align:center;'>Job# (Hover for GlueJobId)</th>
+                  <!-- <th style='text-align:center;'>Workflow RunId</th> -->
+                  <th style='text-align:center;'>Running</th>
+                  <th style='text-align:center;'>Succeeded</th>
+                  <th style='text-align:center;'>Stopped</th>
+                  <th style='text-align:center;'>Failed</th>                  
+                  <th style='text-align:center;'>Timeout</th>
+                  <th style='text-align:center;'>Total</th>
+                  <th style='text-align:center;'>Process</th>
+                  <th style='text-align:center;'>Status (Hover for ErrMsg)</th>
+                  <!-- <th style='text-align:center;'>Error</th> -->
+                  <th style='text-align:center;'>Started On (GMT)</th>
+                  <th style='text-align:center;'>Completed On (GMT)</th>
+                </tr>
+              </thead>
+              <tbody id="workflows">
+              </tbody>              
+            </table>
+            <div class="mdl-shadow--2dp" style="width:100%;" id="jobs_loader"></div>
+          </section>          
+        </div>        
+
+        <!-- <footer class="mdl-mega-footer">
+          <div class="mdl-mega-footer--middle-section">
+            <div class="mdl-mega-footer--drop-down-section">
+              <input class="mdl-mega-footer--heading-checkbox" type="checkbox" checked>
+              <h1 class="mdl-mega-footer--heading">Features</h1>
+              <ul class="mdl-mega-footer--link-list">
+                <li><a href="#">About</a></li>
+                <li><a href="#">Terms</a></li>
+                <li><a href="#">Partners</a></li>
+                <li><a href="#">Updates</a></li>
+              </ul>
+            </div>
+            <div class="mdl-mega-footer--drop-down-section">
+              <input class="mdl-mega-footer--heading-checkbox" type="checkbox" checked>
+              <h1 class="mdl-mega-footer--heading">Details</h1>
+              <ul class="mdl-mega-footer--link-list">
+                <li><a href="#">Spec</a></li>
+                <li><a href="#">Tools</a></li>
+                <li><a href="#">Resources</a></li>
+              </ul>
+            </div>
+            <div class="mdl-mega-footer--drop-down-section">
+              <input class="mdl-mega-footer--heading-checkbox" type="checkbox" checked>
+              <h1 class="mdl-mega-footer--heading">Technology</h1>
+              <ul class="mdl-mega-footer--link-list">
+                <li><a href="#">How it works</a></li>
+                <li><a href="#">Patterns</a></li>
+                <li><a href="#">Usage</a></li>
+                <li><a href="#">Products</a></li>
+                <li><a href="#">Contracts</a></li>
+              </ul>
+            </div>
+            <div class="mdl-mega-footer--drop-down-section">
+              <input class="mdl-mega-footer--heading-checkbox" type="checkbox" checked>
+              <h1 class="mdl-mega-footer--heading">FAQ</h1>
+              <ul class="mdl-mega-footer--link-list">
+                <li><a href="#">Questions</a></li>
+                <li><a href="#">Answers</a></li>
+                <li><a href="#">Contact us</a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="mdl-mega-footer--bottom-section">
+            <div class="mdl-logo">
+              More Information
+            </div>
+            <ul class="mdl-mega-footer--link-list">
+              <li><a href="https://developers.google.com/web/starter-kit/">Web Starter Kit</a></li>
+              <li><a href="#">Help</a></li>
+              <li><a href="#">Privacy and Terms</a></li>
+            </ul>
+          </div> 
+        </footer> -->
+      </main>
+    </div>
+    <a href="https://www.crayondata.com/" target="_blank" id="view-source" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-color--accent mdl-color-text--accent-contrast">Powered by Crayon Data</a>
+
+    <!-- <dialog class="mdl-dialog">
+      <h4 class="mdl-dialog__title">Schedule Result</h4>
+      <div class="mdl-dialog__content">
+        <p id="dialog_content">
+          Content
+        </p>
+      </div>
+      <div class="mdl-dialog__actions">
+        <button type="button" class="mdl-button">Agree</button>
+        <button type="button" class="mdl-button close">Close</button>
+      </div>
+    </dialog> -->
+
+    <script src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.21/js/dataTables.material.min.js"></script>
+
+    <script>
+
+      function stop_loader() {
+        document.getElementById("schedule_area").innerHTML = "";
+        componentHandler.upgradeAllRegistered();
+        componentHandler.upgradeDom();
       }
-    });
-  }
 
-  window.fbAsyncInit = function() {
-    FB.init({
-      appId      : '187386455201066',
-      cookie     : true,
-      xfbml      : true,
-      version    : 'v3.1'
-    });
-      
-    FB.AppEvents.logPageView();
-  };
+      function show_form(cbEvent) {
+        var form_inner_html = "<table class='' cellspacing='0' cellpadding='0' style='width:100%;border=none;text-align:center;'><tbody><tr>";
 
-  (function(d, s, id){
-     var js, fjs = d.getElementsByTagName(s)[0];
-     if (d.getElementById(id)) {return;}
-     js = d.createElement(s); js.id = id;
-     js.src = "https://connect.facebook.net/en_US/sdk.js";
-     fjs.parentNode.insertBefore(js, fjs);
-   }(document, 'script', 'facebook-jssdk'));  
-  </script>
+        if ($('#onboard_checkbox').is(":checked")) {
+          form_inner_html += "<td><div class='mdl-textfield mdl-js-textfield mdl-textfield--floating-label'>                      <input class='mdl-textfield__input' type='text' id='folder_name' name='folder_name'>                      <label class='mdl-textfield__label' for='folder_name'>Input folder name</label>                    </div>                    <div class='mdl-tooltip' data-mdl-for='folder_name'>                      Enter the s3 input folder name<br/>under which the<br/>gzip compressed files are uploaded                      <br/>                      s3://cdl-raw-zone/raw/<strong>{input_folder_name}/*.gz</strong>                    </div></td>";
+        } else {
+          form_inner_html += "<td><div class='mdl-textfield mdl-js-textfield mdl-textfield--floating-label'>                      <input class='mdl-textfield__input' type='text' id='folder_name' name='folder_name' disabled>                      <label class='mdl-textfield__label' for='folder_name'>Input folder name - Disabled</label>                    </div>                    <div class='mdl-tooltip' data-mdl-for='folder_name'>                      Enter the s3 input folder name<br/>under which the<br/>gzip compressed files are uploaded                      <br/>                      s3://cdl-raw-zone/raw/<strong>{input_folder_name}/*.gz</strong>                    </div></td>";
+        }
 
+        if ($('#stage_checkbox').is(":checked")) {
+          form_inner_html += "<td><div class='mdl-textfield mdl-js-textfield mdl-textfield--file'>                      <input class='mdl-textfield__input' placeholder='Click attach icon to upload file' type='text' id='mapping_file_text' name='mapping_file_text' readonly />                                    <div class='mdl-button mdl-button--icon mdl-button--file'>                        <i class='material-icons'>attach_file</i>                        <input type='file' name='mapping_file' id='mapping_file' onchange='document.getElementById('mapping_file_text').value=this.files[0].name;' />                      </div>                    </div>                    <div class='mdl-tooltip' data-mdl-for='mapping_file_text' data-mdl-for='mapping_file'>                      Upload the file which has mapping data                    </div></td>";
+        } else {
+          form_inner_html += "<td><div class='mdl-textfield mdl-js-textfield mdl-textfield--file'>                      <input class='mdl-textfield__input' placeholder='File upload disabled' type='text' id='mapping_file_text' name='mapping_file_text' readonly disabled />                                    <div class='mdl-button mdl-button--icon mdl-button--file'>                        <i class='material-icons'>attach_file</i>                        <input type='file' name='mapping_file' id='mapping_file' onchange='document.getElementById('mapping_file_text').value=this.files[0].name;' disabled />                      </div>                    </div>                    <div class='mdl-tooltip' data-mdl-for='mapping_file_text' data-mdl-for='mapping_file'>                      Upload the file which has mapping data                    </div></td>";
+        }
 
-  <fb:login-button 
-    scope="public_profile,email"
-    onlogin="checkLoginState();">
-  </fb:login-button>
-  <div id="fb_access_token_short_lived"></div><br/>
-  <div id="fb_access_token_long_lived"></div>
-</body>
+        form_inner_html += "</tr>";
+
+        if (!$('#onboard_checkbox').is(":checked") && !$('#stage_checkbox').is(":checked")) {
+          form_inner_html = "";
+        } else {
+          form_inner_html += "<tr><td><div class='mdl-textfield mdl-js-textfield mdl-textfield--floating-label'>                      <input class='mdl-textfield__input' type='text' id='prefix' name='prefix'>                      <label class='mdl-textfield__label' for='prefix'>Prefix</label>                    </div>                    <div class='mdl-tooltip' data-mdl-for='prefix'>                      Enter prefix for the output data                    </div></td>                    <td><div class='mdl-textfield mdl-js-textfield mdl-textfield--floating-label'>                      <input class='mdl-textfield__input' type='text' id='db_name' name='db_name'>                      <label class='mdl-textfield__label' for='db_name'>DB name</label>                    </div>                    <div class='mdl-tooltip' data-mdl-for='db_name'>                      Enter the database name from the below list                      <br/>                      merchant_data, i14, partner_data                    </div></td></tr>";
+
+          form_inner_html += "</tbody></table>";
+        }
+
+        // alert(form_inner_html);
+
+        document.getElementById("cdf_form").innerHTML = form_inner_html;
+
+        componentHandler.upgradeAllRegistered();
+        componentHandler.upgradeDom();
+      }
+
+      // function show_onboard_form(obCbEvent) {
+      //   if(obCbEvent.checked) {
+      //     document.getElementById("onboard_form").innerHTML = "<div class='mdl-textfield mdl-js-textfield mdl-textfield--floating-label'>                      <input class='mdl-textfield__input' type='text' id='folder_name' name='folder_name'>                      <label class='mdl-textfield__label' for='folder_name'>Input folder name</label>                    </div>                    <div class='mdl-tooltip' data-mdl-for='folder_name'>                      Enter the s3 input folder name<br/>under which the<br/>gzip compressed files are uploaded                      <br/>                      s3://cdl-raw-zone/raw/<strong>{input_folder_name}/*.gz</strong>                    </div>";
+      //   } else {
+      //     document.getElementById("onboard_form").innerHTML = "";
+      //   }
+
+      //   componentHandler.upgradeAllRegistered();
+      //   componentHandler.upgradeDom();
+      // }
+
+      // function show_stage_form(stCbEvent) {
+      //   if(stCbEvent.checked) {
+      //     // document.getElementById("stage_form").innerHTML = "<div class='mdl-textfield mdl-js-textfield mdl-textfield--floating-label'>                      <input class='mdl-textfield__input' type='text' id='prefix' name='prefix'>                      <label class='mdl-textfield__label' for='prefix'>Prefix</label>                    </div>                    <div class='mdl-tooltip' data-mdl-for='prefix'>                      Enter prefix for the output data                    </div>                    <div class='mdl-textfield mdl-js-textfield mdl-textfield--floating-label' style='float:right'>                      <input class='mdl-textfield__input' type='text' id='db_name' name='db_name'>                      <label class='mdl-textfield__label' for='db_name'>DB name</label>                    </div>                    <div class='mdl-tooltip' data-mdl-for='db_name'>                      Enter the database name from the below list                      <br/>                      merchant_data, i14, partner_data                    </div>";
+      //     document.getElementById("stage_form").innerHTML = "<div class='mdl-textfield mdl-js-textfield mdl-textfield--file' style='float:right'>                      <input class='mdl-textfield__input' placeholder='Click attach icon to upload file' type='text' id='mapping_file_text' name='mapping_file_text' readonly />                                    <div class='mdl-button mdl-button--icon mdl-button--file'>                        <i class='material-icons'>attach_file</i>                        <input type='file' name='mapping_file' id='mapping_file' onchange='document.getElementById('mapping_file_text').value=this.files[0].name;' />                      </div>                    </div>                    <div class='mdl-tooltip' data-mdl-for='mapping_file_text' data-mdl-for='mapping_file'>                      Upload the file which has mapping data                    </div>";
+      //   } else {
+      //     document.getElementById("stage_form").innerHTML = "";
+      //   }
+
+      //   componentHandler.upgradeAllRegistered();
+      //   componentHandler.upgradeDom();
+      // }
+
+      function schedule_loading_spinner() { 
+        // document.getElementById("schedule_area").innerHTML = "<div class='section--right mdl-spinner mdl-js-spinner is-active'></div>";
+        document.getElementById("schedule_area").innerHTML = "<div id='p2' class='mdl-progress mdl-js-progress mdl-progress__indeterminate block_button'></div>";
+        componentHandler.upgradeAllRegistered();
+        componentHandler.upgradeDom();
+      }
+
+      function jobs_loader() { 
+        // document.getElementById("schedule_area").innerHTML = "<div class='section--right mdl-spinner mdl-js-spinner is-active'></div>";
+        document.getElementById("jobs_loader").innerHTML = "<div id='p2' class='mdl-progress mdl-js-progress mdl-progress__indeterminate block_button'></div>";
+        componentHandler.upgradeAllRegistered();
+        componentHandler.upgradeDom();
+      }
+
+      function refresh_dom() {
+        window.location.reload();
+        // $(document).ready(function() {
+        //   $("div#onboard").removeClass("is-active");
+        //   $("a#a_onboard").removeClass("is-active");
+        //   $("div#jobs").addClass("is-active");        
+        //   $("a#a_jobs").addClass("is-active");
+        //   componentHandler.upgradeAllRegistered();
+        //   componentHandler.upgradeDom();
+        // });
+      }
+
+      function get_workflow_runs() {
+        document.getElementById("workflows").innerHTML = "";
+        
+        jobs_loader();
+
+        var apigClient = apigClientFactory.newClient({
+            apiKey: 'is7rukzpTO6xFPvskjJKt3dBgUkbF2pV3oGgVLWG'
+        });
+
+        var params = {
+            //This is where any header, path, or querystring request params go. The key is the parameter named as defined in the API
+        };
+        var body = {
+            //This is where you define the body of the request
+        };
+
+        var additionalParams = {
+            //If there are any unmodeled query parameters or headers that need to be sent with the request you can add them here
+            headers: {
+            },
+            queryParams: {
+                // param0: '',
+                // param1: ''
+            }
+        };
+
+        apigClient.rootGet(params, body, additionalParams)
+            .then(function(wfs){                    
+                // alert("Response: " + JSON.stringify(wfs));
+                var ihtml="";
+                wfs = wfs.data.Runs;
+                // alert("wfs: " + wfs);
+                count = wfs.length + 1;
+                for (wf in wfs) {
+                  count = count - 1;
+
+                  RunningActions = parseInt(wfs[wf].Statistics.RunningActions);
+                  SucceededActions = parseInt(wfs[wf].Statistics.SucceededActions);
+                  StoppedActions = parseInt(wfs[wf].Statistics.StoppedActions);
+                  FailedActions = parseInt(wfs[wf].Statistics.FailedActions);
+                  TimeoutActions = parseInt(wfs[wf].Statistics.TimeoutActions);
+                  TotalActions = parseInt(wfs[wf].Statistics.TotalActions);
+                  Status = wfs[wf].Status;
+
+                  if(TotalActions == 3) {
+                    operations = "Onboard & Stage";
+                    workflow = "cdl_raw_zone_etl";
+                  } else if(TotalActions == 2) {
+                    operations = "Stage";
+                    workflow = "cdl_stage_zone_etl";
+                  } else if(TotalActions == 1) {
+                    operations = "Onboard";
+                    workflow = "cdl_onboard_etl";
+                  } else {
+                    operations = undefined;
+                    workflow = undefined;
+                  }
+
+                  count_html = "<a href='https://ap-southeast-1.console.aws.amazon.com/glue/home?region=ap-southeast-1#etl:tab=workflows;workflowView=workflow-run-details?runId=" + wfs[wf].WorkflowRunId + "&workflowName=" + workflow + "' target='_blank'><span class='mdl-chip mdl-color--light-blue-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + count + "</span></span><i class='material-icons'>open_in_new</i></a>";
+
+                  nodes = wfs[wf].Graph.Nodes;
+
+                  var error_msg;
+                  for(node in nodes) {
+                    if(nodes[node].Type == "JOB") {
+                        job_runs = nodes[node].JobDetails.JobRuns;
+                        if(job_runs != undefined) {
+                          error_msg = nodes[node].JobDetails.JobRuns[0].ErrorMessage;
+                        }                        
+                    }
+                  }
+
+                  if(Status == "COMPLETED") {
+                    status_html = "<span class='mdl-chip mdl-color--light-green-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Status + "</span></span>";
+                  } else if(Status == "RUNNING") {
+                    status_html = "<span class='mdl-chip mdl-color--yellow-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Status + "</span></span>";
+                  } else {
+                    status_html = "<span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>Unknown</span></span>";
+                  }
+
+                  if(RunningActions > 0) {
+                    Process = "In-Progress";
+                    process_html = "<span class='mdl-chip mdl-color--yellow-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                  } else if (SucceededActions == TotalActions) {
+                    Process = "Success";
+                    process_html = "<span class='mdl-chip mdl-color--light-green-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                  } else if (StoppedActions > 0) {
+                    Process = "Stopped";
+                    process_html = "<span class='mdl-chip mdl-color--orange-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                  } else if (FailedActions > 0) {
+                    Process = "Failed";
+                    process_html = "<span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                  } else if (TimeoutActions > 0) {
+                    Process = "Timedout";
+                    process_html = "<span class='mdl-chip mdl-color--orange-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                  } else {
+                    Process = "Failed";
+                    process_html = "<span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                  }
+
+                  ihtml += "<tr><td title='Glue JobId => " + wfs[wf].WorkflowRunId + "' style='text-align:center;'>" + count_html + "</td>";        
+                  // ihtml += "<td style='text-align:center;'>" + wfs[wf].WorkflowRunId + "</td>";
+                  if(RunningActions > 0) {
+                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--yellow-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.RunningActions + "</span></span></td>";
+                  } else {
+                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.RunningActions + "</span></span></td>";
+                  }
+
+                  if(SucceededActions == TotalActions) {
+                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--light-green-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.SucceededActions + "</span></span></td>";
+                  } else if(SucceededActions > 0 && RunningActions > 0) {
+                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.SucceededActions + "</span></span></td>";
+                  } else if(SucceededActions == 0 ) {
+                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.SucceededActions + "</span></span></td>";
+                  } else {
+                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--orange-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.SucceededActions + "</span></span></td>";
+                  }
+
+                  if(StoppedActions > 0) {
+                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.StoppedActions + "</span></span></td>";
+                  } else {
+                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.StoppedActions + "</span></span></td>";
+                  }
+
+                  if(FailedActions > 0) {
+                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.FailedActions + "</span></span></td>";
+                  } else {
+                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.FailedActions + "</span></span></td>";
+                  }
+
+                  if(TimeoutActions > 0) {
+                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.TimeoutActions + "</span></span></td>";
+                  } else {
+                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.TimeoutActions + "</span></span></td>";
+                  }
+
+                  ihtml += "<td title='" + operations + "' style='text-align:center;'><span class='mdl-chip mdl-color--blue-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.TotalActions + "</span></span></td>";
+
+                  ihtml += "<td style='text-align:center;'>" + status_html + "</td>";
+                  ihtml += "<td title='" + error_msg + "' style='text-align:center;'>" + process_html + "</td>";
+                  // ihtml += "<td style='text-align:center;'>" + error_msg + "</td>";
+                  ihtml += "<td style='text-align:center;'>" + wfs[wf].StartedOn + "</td>";
+                  ihtml += "<td style='text-align:center;'>" + wfs[wf].CompletedOn + "</td></tr>";
+                }
+                document.getElementById("workflows").innerHTML = ihtml;
+                document.getElementById("jobs_loader").innerHTML = "";
+                componentHandler.upgradeAllRegistered();
+                componentHandler.upgradeDom();
+                
+                $('#jobs_table').DataTable( {
+                    // retrieve: true,
+                    destroy: true,
+                    autoWidth: true,
+                    pagingType: "full_numbers",
+                    ordering: true,
+                    info: true,
+                    order: [[ 9, "desc" ]],
+                    scrollY: "44vh",
+                    scrollCollapse: true,
+                    paging: true,
+                    scrollX: true,
+                    lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
+                    searching: true,
+                    columnDefs: [
+                        {
+                            targets: ['_all'],
+                            className: 'mdc-data-table__cell'
+                        }
+                    ]
+                });
+            }).catch( function(result){
+                alert("Error: " + JSON.stringify(result));
+            });
+      }
+
+      function post_workflow(file_content, form_body) {
+        var apigClient = apigClientFactory.newClient({
+            apiKey: 'is7rukzpTO6xFPvskjJKt3dBgUkbF2pV3oGgVLWG'
+        });
+
+        var params = {
+            //This is where any header, path, or querystring request params go. The key is the parameter named as defined in the API
+        };
+
+        var operations = [];
+        if ($('#onboard_checkbox').is(":checked")) {
+          operations.push("onboard");
+        }
+        if ($('#stage_checkbox').is(":checked")) {
+          operations.push("stage");
+        }
+
+        var body = {
+            //This is where you define the body of the request
+            "folder_name": decodeURIComponent(form_body.folder_name).trim(),
+            "db_name": decodeURIComponent(form_body.db_name).trim(),
+            "prefix": decodeURIComponent(form_body.prefix).trim(),
+            "mapping_file": file_content.trim(),
+            "operations": operations
+        };
+
+        var additionalParams = {
+            //If there are any unmodeled query parameters or headers that need to be sent with the request you can add them here
+            headers: {
+            },
+            queryParams: {
+                // param0: '',
+                // param1: ''
+            }
+        };
+
+        apigClient.rootPost(params, body, additionalParams)
+          .then(function(result){
+              stop_loader();
+
+              // alert("Response: " + JSON.stringify(result));
+              alert(result.data);
+              
+              // showDialogButton.addEventListener('click', function() {
+              //   dialog.showModal();
+              // });
+              
+              // dialog.querySelector('.close').addEventListener('click', function() {
+              //   dialog.close();
+              // });
+
+              document.getElementById("folder_name").value = "";
+              document.getElementById("prefix").value = "";
+              document.getElementById("db_name").value = "";
+              document.getElementById("mapping_file").value = "";
+              document.getElementById("mapping_file_text").value = "";
+          }).catch( function(result){
+              alert("Error: " + JSON.stringify(result));
+              stop_loader();
+          });
+      }    
+
+      $('button#schedule').click( function() {
+
+        const queryStringToObject = (queryString) => {
+          let obj = {}
+          if(queryString) {
+            queryString.slice(0).split('&').map((item) => {
+              const [ k, v ] = item.split('=')
+              v ? obj[k] = v : null
+            })
+          }
+          return obj
+        }
+
+        if ( ! window.FileReader ) {
+          stop_loader();
+
+          return alert( 'FileReader API is not supported by your browser.' );
+        }
+
+        form_body = queryStringToObject($('form#schedule_form').serialize());
+
+        if ($('#onboard_checkbox').is(":checked")) {
+          if(form_body.folder_name == undefined) {
+            stop_loader();
+            return alert("Folder name is mandatory!!!");
+          }
+
+          if(form_body.prefix == undefined) {
+            stop_loader();
+            return alert("Prefix is mandatory!!!");
+          }
+
+          if(form_body.db_name == undefined) {
+            stop_loader();
+            return alert("DB name is mandatory!!!");
+          }
+        } else {
+          // alert("Un-Checked");
+        }
+
+        if ($('#stage_checkbox').is(":checked")) {
+          if(form_body.prefix == undefined) {
+            stop_loader();
+            return alert("Prefix is mandatory!!!");
+          }
+
+          if(form_body.db_name == undefined) {
+            stop_loader();
+            return alert("DB name is mandatory!!!");
+          }
+
+          var $i = $( '#mapping_file' ), // Put file input ID here
+          input = $i[0]; // Getting the element from jQuery
+          
+          var file_content;
+          if ( input.files && input.files[0] ) {
+            alert("Mapping file available");
+            // alert("Url: " + fr.readAsDataURL( file ));
+          } else {
+            // Handle errors here
+            stop_loader();
+
+            return alert( "File not selected or browser incompatible." );
+          }
+        } else {
+          // alert("Un-Checked");
+        }        
+
+        if (!$('#onboard_checkbox').is(":checked") && !$('#stage_checkbox').is(":checked")) {
+          stop_loader();
+          return alert("Select either 'Onboard' or 'Stage' or Both to perform CDF operations");          
+        }
+
+        if ($('#stage_checkbox').is(":checked")) {
+          form_body = queryStringToObject($('form#schedule_form').serialize());
+
+          var $i = $( '#mapping_file' ), // Put file input ID here
+          input = $i[0]; // Getting the element from jQuery
+          
+          var file_content;
+
+          file = input.files[0]; // The file
+          fr = new FileReader(); // FileReader instance
+          fr.onload = function () {
+            // Do stuff on onload, use fr.result for contents of file
+            file_content = fr.result;            
+            post_workflow(file_content, form_body);
+          };
+          fr.readAsText( file );
+        }
+        else {
+          post_workflow("", form_body);
+        }
+      });
+    </script>
+  </body>
 </html>
