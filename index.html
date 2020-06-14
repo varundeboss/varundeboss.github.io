@@ -63,6 +63,7 @@
     <script type="text/javascript" src="lib/apiGatewayCore/simpleHttpClient.js"></script>
     <script type="text/javascript" src="lib/apiGatewayCore/utils.js"></script>
     <script type="text/javascript" src="apigClient.js"></script>
+    <script type="text/javascript" src="apigImageClient.js"></script>    
     <style>
     #view-source {
       position: fixed;
@@ -102,10 +103,31 @@
       /*cursor: pointer;*/
       /*text-align: center;*/
     }
+
+    .mdl-progress-bar > .progressbar {
+      display: block;
+      width: 100%;
+      border: none;
+      background-color: rgb(255,0,0);
+    }
+
+    .mdl-progress-bar > .bufferbar {
+      display: block;
+      width: 100%;
+      border: none;
+      background-image: linear-gradient(to right, rgba(255,255,255, 0.7), rgba(255,255,255, 0.7)), linear-gradient(to right, rgb(255,0,0), rgb(255,0,0));
+    }
+
+    .mdl-progress-bar > .auxbar {
+      display: block;
+      width: 100%;
+      border: none;
+      background-image: linear-gradient(to right, rgba(255,255,255, 0.9), rgba(255,255,255, 0.9)), linear-gradient(to right, rgb(255,0,0), rgb(255,0,0));
+    }
     </style>
     <script src="jquery-3.5.1.min.js"></script>
   </head>
-  <body class="mdl-demo mdl-color--white-100 mdl-color-text--white-700 mdl-base" onload="get_workflow_runs()">
+  <body class="mdl-demo mdl-color--white-100 mdl-color-text--white-700 mdl-base" onload="get_all_workflow_runs()">
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
       <header class="mdl-layout__header mdl-layout__header--scroll mdl-color--primary">
         <!-- <div class="mdl-layout--large-screen-only mdl-layout__header-row">
@@ -116,13 +138,12 @@
         </div>
         <!-- <div class="mdl-layout--large-screen-only mdl-layout__header-row">
         </div> -->
-        <div class="mdl-layout__tab-bar mdl-js-ripple-effect mdl-color--primary-dark">
-          <a href="#onboard" id="a_onboard" class="mdl-layout__tab is-active">Onboard</a>
-          <a href="#jobs" id="a_jobs" class="mdl-layout__tab">Jobs</a>
-          <!-- <a href="#features" class="mdl-layout__tab">Details</a>
-          <a href="#features" class="mdl-layout__tab">Technology</a>
-          <a href="#features" class="mdl-layout__tab">FAQ</a> -->
-          <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored mdl-shadow--4dp mdl-color--accent" id="add" onclick="refresh_dom()">
+        <div id="tab_bar" class="mdl-layout__tab-bar mdl-js-ripple-effect mdl-color--primary-dark mdl-layout--fixed-tabs">
+          <a id="onboard_tab" href="#onboard" class="mdl-layout__tab is-active">Data Onboard</a>
+          <a id="jobs_tab" href="#jobs" class="mdl-layout__tab">Data Jobs</a>
+          <a id="image_onboard_tab" href="#image_onboard" class="mdl-layout__tab">Image Onboard</a>
+          <a id="image_jobs_tab" href="#image_jobs" class="mdl-layout__tab">Image Jobs</a>
+          <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored mdl-shadow--4dp mdl-color--accent" id="add" onclick="refresh_workflow()">
             <i class="material-icons" role="presentation">refresh</i>
             <span class="visuallyhidden">Add</span>
           </button>
@@ -130,11 +151,11 @@
       </header>
       <main class="mdl-layout__content">
         <div class="mdl-layout__tab-panel is-active" id="onboard">
-          <section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--2dp">
+          <section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--16dp">
             <div class="mdl-card mdl-cell mdl-cell--12-col">
               <div class="mdl-card__supporting-text">
-                <h4>Onboard Data</h4>
-                <p>Fill the following details and click <b>SCHEDULE</b> to onboard and/or stage the raw data into CDF</p>                
+                <h4>Data Onboard</h4>
+                <p>Fill the following details and click <b>SCHEDULE DATA ONBOARD</b> to onboard and/or stage the raw data into CDF</p>                
                 <form id="schedule_form">
                   <table>
                     <tr>
@@ -168,14 +189,14 @@
                   <div id="cdf_form"></div>
 
                   <div class="mdl-card__actions">
-                    <!-- <a href="#" class="mdl-button">Read our features</a> -->
+                    <!-- <a href="#" class="mdl-button">Read our features</a> -->                    
                     
                   <button type='button' value='schedule' id="schedule" class="section--center mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-color--green-400 block_button" onclick="schedule_loading_spinner()">
-                    schedule
+                    schedule data onboard
                   </button>
                   
-                  <div id="schedule_area"></div>
-                  </div>                  
+                  <div id="schedule_area"></div>                  
+                  </div>
                 </form>
               </div>
             </div>
@@ -190,32 +211,80 @@
           </section>
         </div>
 
-        <div class="mdl-layout__tab-panel" id="jobs">          
-          <section class="section--left mdl-grid mdl-grid--no-spacing">            
-            <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" style="width:100%;" id="jobs_table">              
-              <thead>
-                <tr>
-                  <th style='text-align:center;'>Job# (Hover for GlueJobId)</th>
-                  <!-- <th style='text-align:center;'>Workflow RunId</th> -->
-                  <th style='text-align:center;'>Running</th>
-                  <th style='text-align:center;'>Succeeded</th>
-                  <th style='text-align:center;'>Stopped</th>
-                  <th style='text-align:center;'>Failed</th>                  
-                  <th style='text-align:center;'>Timeout</th>
-                  <th style='text-align:center;'>Total</th>
-                  <th style='text-align:center;'>Process</th>
-                  <th style='text-align:center;'>Status (Hover for ErrMsg)</th>
-                  <!-- <th style='text-align:center;'>Error</th> -->
-                  <th style='text-align:center;'>Started On (GMT)</th>
-                  <th style='text-align:center;'>Completed On (GMT)</th>
-                </tr>
-              </thead>
-              <tbody id="workflows">
-              </tbody>              
-            </table>
-            <div class="mdl-shadow--2dp" style="width:100%;" id="jobs_loader"></div>
-          </section>          
-        </div>        
+        <div class="mdl-layout__tab-panel" id="jobs">        
+          <div class="mdl-card mdl-cell mdl-cell--12-col">              
+              <table id="jobs_table" class="display" width="100%">
+                <div class="mdl-shadow--2dp" style="width:100%;" id="jobs_loader"></div>
+              </table>              
+          </div>          
+        </div>
+
+        <div class="mdl-layout__tab-panel" id="image_onboard">
+          <section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--16dp">
+            <div class="mdl-card mdl-cell mdl-cell--12-col">
+              <div class="mdl-card__supporting-text">
+                <h4>Image Onboard</h4>
+                <p>Fill the following details and click <b>SCHEDULE IMAGE ONBOARD</b> to onboard the raw images into CDF</p>
+                <form id="image_schedule_form">
+                  
+                  <div id="image_cdf_form">
+                    <table class='' cellspacing='0' cellpadding='0' style='width:100%;border=none;text-align:center;'>
+                      <tbody>
+                          <tr>
+                              <td>
+                                  <div class='mdl-textfield mdl-js-textfield mdl-textfield--floating-label'>
+                                      <input class='mdl-textfield__input' type='text' id='src_s3_name' name='src_s3_name'>
+                                      <label class='mdl-textfield__label' for='src_s3_name'>Source S3 Image path</label>
+                                  </div>
+                                  <div class='mdl-tooltip' data-mdl-for='src_s3_name'>
+                                      Enter the full s3 input path<br/>under which the image files are uploaded
+                                      <br/>
+                                      Eg: <strong>s3://cd-dp-saturam-data/reviews_restaurants/batch_new</strong>
+                                  </div>
+                              </td>
+                              <td>
+                                  <div class='mdl-textfield mdl-js-textfield mdl-textfield--floating-label'>
+                                      <input class='mdl-textfield__input' type='text' id='dst_s3_name' name='dst_s3_name'>
+                                      <label class='mdl-textfield__label' for='dst_s3_name'>Destination S3 Image path</label>
+                                  </div>
+                                  <div class='mdl-tooltip' data-mdl-for='dst_s3_name'>
+                                      Enter the full s3 output path<br/>under which the image files needs to be onboarded
+                                      <br/>
+                                      Eg: <strong>s3://cd-dp-images/high-res-image/i14/restaurants</strong>
+                                  </div>
+                              </td>
+                          </tr>
+                          <!-- <tr>
+                            <td>
+                              <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="duplication_toggle">
+                                <input type="checkbox" id="duplication_toggle" class="mdl-switch__input">
+                                <span class="mdl-switch__label">Check for duplicates?</span>
+                              </label>
+                            </td>
+                          </tr> -->
+                      </tbody>
+                    </table>                    
+                  </div>
+
+                  <div class="mdl-card__actions">                  
+                    <button type='button' value='image_schedule' id="image_schedule" class="section--center mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-color--green-400 block_button" onclick="image_schedule_loading_spinner()">
+                      schedule image onboard
+                    </button>                  
+                    <div id="image_schedule_area"></div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="mdl-layout__tab-panel" id="image_jobs">        
+          <div class="mdl-card mdl-cell mdl-cell--12-col">              
+              <table id="image_jobs_table" class="display" width="100%">
+                <div class="mdl-shadow--2dp" style="width:100%;" id="image_jobs_loader"></div>
+              </table>              
+          </div>          
+        </div>
 
         <!-- <footer class="mdl-mega-footer">
           <div class="mdl-mega-footer--middle-section">
@@ -288,16 +357,39 @@
     </dialog> -->
 
     <script src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.4/moment.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.21/js/dataTables.material.min.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/datetime-moment.js"></script>    
 
     <script>
+
+      function clear_data_form() {
+        // document.getElementById("schedule_form").reset();
+        document.getElementById("folder_name").reset();
+        document.getElementById("prefix").reset();
+        document.getElementById("db_name").reset();
+        document.getElementById("mapping_file").reset();
+        document.getElementById("mapping_file_text").reset();
+      }
+
+      function clear_image_form() {
+        document.getElementById("image_schedule_form").reset();
+        // document.getElementById("src_s3_name").value = "";
+        // document.getElementById("dst_s3_name").value = "";
+      }
 
       function stop_loader() {
         document.getElementById("schedule_area").innerHTML = "";
         componentHandler.upgradeAllRegistered();
         componentHandler.upgradeDom();
       }
+
+      function image_stop_loader() {
+        document.getElementById("image_schedule_area").innerHTML = "";
+        componentHandler.upgradeAllRegistered();
+        componentHandler.upgradeDom();
+      }      
 
       function show_form(cbEvent) {
         var form_inner_html = "<table class='' cellspacing='0' cellpadding='0' style='width:100%;border=none;text-align:center;'><tbody><tr>";
@@ -309,7 +401,7 @@
         }
 
         if ($('#stage_checkbox').is(":checked")) {
-          form_inner_html += "<td><div class='mdl-textfield mdl-js-textfield mdl-textfield--file'>                      <input class='mdl-textfield__input' placeholder='Click attach icon to upload file' type='text' id='mapping_file_text' name='mapping_file_text' readonly />                                    <div class='mdl-button mdl-button--icon mdl-button--file'>                        <i class='material-icons'>attach_file</i>                        <input type='file' name='mapping_file' id='mapping_file' onchange='document.getElementById('mapping_file_text').value=this.files[0].name;' />                      </div>                    </div>                    <div class='mdl-tooltip' data-mdl-for='mapping_file_text' data-mdl-for='mapping_file'>                      Upload the file which has mapping data                    </div></td>";
+          form_inner_html += '<td><div class="mdl-textfield mdl-js-textfield mdl-textfield--file">                      <input class="mdl-textfield__input" placeholder="Click attach icon to upload file" type="text" id="mapping_file_text" name="mapping_file_text" readonly />                                    <div class="mdl-button mdl-button--icon mdl-button--file">                        <i class="material-icons">attach_file</i>                        <input type="file" name="mapping_file" id="mapping_file" onchange="document.getElementById(\'mapping_file_text\').value=this.files[0].name;" />                      </div>                    </div>                    <div class="mdl-tooltip" data-mdl-for="mapping_file_text" data-mdl-for="mapping_file">                      Upload the file which has mapping data                    </div></td>';
         } else {
           form_inner_html += "<td><div class='mdl-textfield mdl-js-textfield mdl-textfield--file'>                      <input class='mdl-textfield__input' placeholder='File upload disabled' type='text' id='mapping_file_text' name='mapping_file_text' readonly disabled />                                    <div class='mdl-button mdl-button--icon mdl-button--file'>                        <i class='material-icons'>attach_file</i>                        <input type='file' name='mapping_file' id='mapping_file' onchange='document.getElementById('mapping_file_text').value=this.files[0].name;' disabled />                      </div>                    </div>                    <div class='mdl-tooltip' data-mdl-for='mapping_file_text' data-mdl-for='mapping_file'>                      Upload the file which has mapping data                    </div></td>";
         }
@@ -332,59 +424,235 @@
         componentHandler.upgradeDom();
       }
 
-      // function show_onboard_form(obCbEvent) {
-      //   if(obCbEvent.checked) {
-      //     document.getElementById("onboard_form").innerHTML = "<div class='mdl-textfield mdl-js-textfield mdl-textfield--floating-label'>                      <input class='mdl-textfield__input' type='text' id='folder_name' name='folder_name'>                      <label class='mdl-textfield__label' for='folder_name'>Input folder name</label>                    </div>                    <div class='mdl-tooltip' data-mdl-for='folder_name'>                      Enter the s3 input folder name<br/>under which the<br/>gzip compressed files are uploaded                      <br/>                      s3://cdl-raw-zone/raw/<strong>{input_folder_name}/*.gz</strong>                    </div>";
-      //   } else {
-      //     document.getElementById("onboard_form").innerHTML = "";
-      //   }
-
-      //   componentHandler.upgradeAllRegistered();
-      //   componentHandler.upgradeDom();
-      // }
-
-      // function show_stage_form(stCbEvent) {
-      //   if(stCbEvent.checked) {
-      //     // document.getElementById("stage_form").innerHTML = "<div class='mdl-textfield mdl-js-textfield mdl-textfield--floating-label'>                      <input class='mdl-textfield__input' type='text' id='prefix' name='prefix'>                      <label class='mdl-textfield__label' for='prefix'>Prefix</label>                    </div>                    <div class='mdl-tooltip' data-mdl-for='prefix'>                      Enter prefix for the output data                    </div>                    <div class='mdl-textfield mdl-js-textfield mdl-textfield--floating-label' style='float:right'>                      <input class='mdl-textfield__input' type='text' id='db_name' name='db_name'>                      <label class='mdl-textfield__label' for='db_name'>DB name</label>                    </div>                    <div class='mdl-tooltip' data-mdl-for='db_name'>                      Enter the database name from the below list                      <br/>                      merchant_data, i14, partner_data                    </div>";
-      //     document.getElementById("stage_form").innerHTML = "<div class='mdl-textfield mdl-js-textfield mdl-textfield--file' style='float:right'>                      <input class='mdl-textfield__input' placeholder='Click attach icon to upload file' type='text' id='mapping_file_text' name='mapping_file_text' readonly />                                    <div class='mdl-button mdl-button--icon mdl-button--file'>                        <i class='material-icons'>attach_file</i>                        <input type='file' name='mapping_file' id='mapping_file' onchange='document.getElementById('mapping_file_text').value=this.files[0].name;' />                      </div>                    </div>                    <div class='mdl-tooltip' data-mdl-for='mapping_file_text' data-mdl-for='mapping_file'>                      Upload the file which has mapping data                    </div>";
-      //   } else {
-      //     document.getElementById("stage_form").innerHTML = "";
-      //   }
-
-      //   componentHandler.upgradeAllRegistered();
-      //   componentHandler.upgradeDom();
-      // }
-
       function schedule_loading_spinner() { 
-        // document.getElementById("schedule_area").innerHTML = "<div class='section--right mdl-spinner mdl-js-spinner is-active'></div>";
-        document.getElementById("schedule_area").innerHTML = "<div id='p2' class='mdl-progress mdl-js-progress mdl-progress__indeterminate block_button'></div>";
+        document.getElementById("schedule_area").innerHTML = "<div id='p2' class='mdl-progress mdl-js-progress mdl-progress__indeterminate mdl-progress-bar' style='width: 100%;'></div>";
+        componentHandler.upgradeAllRegistered();
+        componentHandler.upgradeDom();
+      }
+
+      function image_schedule_loading_spinner() { 
+        document.getElementById("image_schedule_area").innerHTML = "<div id='p2' class='mdl-progress mdl-js-progress mdl-progress__indeterminate mdl-progress-bar' style='width: 100%;'></div>";
         componentHandler.upgradeAllRegistered();
         componentHandler.upgradeDom();
       }
 
       function jobs_loader() { 
-        // document.getElementById("schedule_area").innerHTML = "<div class='section--right mdl-spinner mdl-js-spinner is-active'></div>";
-        document.getElementById("jobs_loader").innerHTML = "<div id='p2' class='mdl-progress mdl-js-progress mdl-progress__indeterminate block_button'></div>";
+        document.getElementById("jobs_loader").innerHTML = "<div id='p2' class='mdl-progress mdl-js-progress mdl-progress__indeterminate mdl-progress-bar' style='width: 100%;'></div>";
         componentHandler.upgradeAllRegistered();
         componentHandler.upgradeDom();
       }
 
-      function refresh_dom() {
-        window.location.reload();
-        // $(document).ready(function() {
-        //   $("div#onboard").removeClass("is-active");
-        //   $("a#a_onboard").removeClass("is-active");
-        //   $("div#jobs").addClass("is-active");        
-        //   $("a#a_jobs").addClass("is-active");
-        //   componentHandler.upgradeAllRegistered();
-        //   componentHandler.upgradeDom();
-        // });
+      function image_jobs_loader() { 
+        document.getElementById("image_jobs_loader").innerHTML = "<div id='p2' class='mdl-progress mdl-js-progress mdl-progress-red mdl-progress__indeterminate mdl-progress-bar' style='width: 100%;'></div>";
+        componentHandler.upgradeAllRegistered();
+        componentHandler.upgradeDom();
+      }
+
+      function get_all_workflow_runs() {
+        get_workflow_runs();
+        get_image_workflow_runs();
+
+        $.fn.dataTable.moment( 'D MMM YYYY HH:mm:SS' );
+
+        $('#jobs_table').DataTable( {
+            autoWidth: true,
+            pagingType: "full_numbers",
+            ordering: true,
+            info: true,
+            order: [[ 9, "desc" ]],
+            paging: true,
+            lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
+            pageLength: 5,
+            searching: true,
+            // retrieve: true,
+            // destroy: true,
+            responsive: true,
+            fixedHeader: true,
+            fixedColumns: true,
+            select: true,
+            columns : [
+              {   data : 'job_html',
+                  title: 'Job#',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'running_html',
+                  title : 'Running',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'succeeded_html',
+                  title : 'Succeeded',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'stopped_html',
+                  title : 'Stopped',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'failed_html',
+                  title : 'Failed',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'timedout_html',
+                  title : 'Timedout',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'total_html',
+                  title : 'Total',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'status_html',
+                  title : 'Process',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'process_plus_html',
+                  title : 'Status',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },     
+              {   data : 'started_html',
+                  title : 'Started On (GMT)',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'ended_html',
+                  title : 'Completed On (GMT)',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              }
+            ],
+            columnDefs: [
+              {                        
+                  className: "text-center",
+                  targets: "_all"
+              }
+            ]
+        });
+
+        $('#image_jobs_table').DataTable( {
+            autoWidth: true,
+            pagingType: "full_numbers",
+            ordering: true,
+            info: true,
+            order: [[ 9, "desc" ]],
+            paging: true,
+            lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
+            pageLength: 5,
+            searching: true,
+            // retrieve: true,
+            // destroy: true,
+            responsive: true,
+            fixedHeader: true,
+            fixedColumns: true,
+            select: true,
+            columns : [
+              {   data : 'job_html',
+                  title: 'Job#',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 's3_src_html',
+                  title : 'Source',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 's3_dst_html',
+                  title : 'Destination',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'success_html',
+                  title : 'Succeeded',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'fail_html',
+                  title : 'Failed',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'total_html',
+                  title : 'Total',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'status_html',
+                  title : 'Process',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'process_html',
+                  title : 'Status',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'image_links_html',
+                  title : 'Image Links',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },                    
+              {   data : 'started_html',
+                  title : 'Started On (GMT)',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              },
+              {   data : 'ended_html',
+                  title : 'Completed On (GMT)',
+                  render : function(data, type, row) {
+                    return data
+                  }    
+              }
+            ],
+            columnDefs: [
+              {                        
+                  className: "text-center",
+                  targets: "_all"
+              }
+            ]
+        });        
+      }
+
+      function refresh_workflow() {
+        // window.location.reload();
+        // $(".mdl-layout__tab:eq(2) span").click ();
+        if ($( "#jobs_tab" ).hasClass("is-active") == true) {
+          get_workflow_runs();
+        } else if ($( "#image_jobs_tab" ).hasClass("is-active") == true) {
+          get_image_workflow_runs();
+        }
       }
 
       function get_workflow_runs() {
-        document.getElementById("workflows").innerHTML = "";
+        // document.getElementById("workflows").innerHTML = "";
         
-        jobs_loader();
+        jobs_loader();        
 
         var apigClient = apigClientFactory.newClient({
             apiKey: 'is7rukzpTO6xFPvskjJKt3dBgUkbF2pV3oGgVLWG'
@@ -410,13 +678,15 @@
         apigClient.rootGet(params, body, additionalParams)
             .then(function(wfs){                    
                 // alert("Response: " + JSON.stringify(wfs));
+                html_data = [];
                 var ihtml="";
                 wfs = wfs.data.Runs;
                 // alert("wfs: " + wfs);
                 count = wfs.length + 1;
                 for (wf in wfs) {
+                  html_json = {};
                   count = count - 1;
-
+                  
                   RunningActions = parseInt(wfs[wf].Statistics.RunningActions);
                   SucceededActions = parseInt(wfs[wf].Statistics.SucceededActions);
                   StoppedActions = parseInt(wfs[wf].Statistics.StoppedActions);
@@ -457,103 +727,297 @@
                     status_html = "<span class='mdl-chip mdl-color--light-green-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Status + "</span></span>";
                   } else if(Status == "RUNNING") {
                     status_html = "<span class='mdl-chip mdl-color--yellow-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Status + "</span></span>";
+                  } else if(Status == "STOPPED" || Status == "STOPPING") {
+                    status_html = "<span class='mdl-chip mdl-color--orange-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Status + "</span></span>";
                   } else {
                     status_html = "<span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>Unknown</span></span>";
                   }
 
                   if(RunningActions > 0) {
                     Process = "In-Progress";
-                    process_html = "<span class='mdl-chip mdl-color--yellow-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                    process_html = "<span style='cursor:help' class='mdl-chip mdl-color--yellow-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
                   } else if (SucceededActions == TotalActions) {
                     Process = "Success";
-                    process_html = "<span class='mdl-chip mdl-color--light-green-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                    process_html = "<span style='cursor:help' class='mdl-chip mdl-color--light-green-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
                   } else if (StoppedActions > 0) {
                     Process = "Stopped";
-                    process_html = "<span class='mdl-chip mdl-color--orange-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                    process_html = "<span style='cursor:help' class='mdl-chip mdl-color--orange-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
                   } else if (FailedActions > 0) {
                     Process = "Failed";
-                    process_html = "<span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                    process_html = "<span style='cursor:help' class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
                   } else if (TimeoutActions > 0) {
                     Process = "Timedout";
-                    process_html = "<span class='mdl-chip mdl-color--orange-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                    process_html = "<span style='cursor:help' class='mdl-chip mdl-color--orange-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
                   } else {
-                    Process = "Failed";
-                    process_html = "<span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                    Process = "Unknown";
+                    process_html = "<span style='cursor:help' class='mdl-chip mdl-color--grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
                   }
 
-                  ihtml += "<tr><td title='Glue JobId => " + wfs[wf].WorkflowRunId + "' style='text-align:center;'>" + count_html + "</td>";        
-                  // ihtml += "<td style='text-align:center;'>" + wfs[wf].WorkflowRunId + "</td>";
+                  job_html = "<span title='Glue JobId => " + wfs[wf].WorkflowRunId + "' style='text-align:center;'>" + count_html + "</span>";
+                  html_json.job_html = job_html;
+                  
                   if(RunningActions > 0) {
-                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--yellow-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.RunningActions + "</span></span></td>";
+                    running_html = "<span style='text-align:center;'><span class='mdl-chip mdl-color--yellow-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.RunningActions + "</span></span></span>";
                   } else {
-                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.RunningActions + "</span></span></td>";
+                    running_html = "<span style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.RunningActions + "</span></span></span>";
                   }
+                  html_json.running_html = running_html;
 
                   if(SucceededActions == TotalActions) {
-                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--light-green-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.SucceededActions + "</span></span></td>";
+                    succeeded_html = "<span style='text-align:center;'><span class='mdl-chip mdl-color--light-green-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.SucceededActions + "</span></span></span>";
                   } else if(SucceededActions > 0 && RunningActions > 0) {
-                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.SucceededActions + "</span></span></td>";
+                    succeeded_html = "<span style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.SucceededActions + "</span></span></span>";
                   } else if(SucceededActions == 0 ) {
-                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.SucceededActions + "</span></span></td>";
+                    succeeded_html = "<span style='text-align:center;'><span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.SucceededActions + "</span></span></span>";
                   } else {
-                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--orange-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.SucceededActions + "</span></span></td>";
+                    succeeded_html = "<span style='text-align:center;'><span class='mdl-chip mdl-color--orange-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.SucceededActions + "</span></span></span>";
                   }
+                  html_json.succeeded_html = succeeded_html;
 
                   if(StoppedActions > 0) {
-                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.StoppedActions + "</span></span></td>";
+                    stopped_html = "<span style='text-align:center;'><span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.StoppedActions + "</span></span></span>";
                   } else {
-                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.StoppedActions + "</span></span></td>";
+                    stopped_html = "<span style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.StoppedActions + "</span></span></span>";
                   }
+                  html_json.stopped_html = stopped_html;
 
                   if(FailedActions > 0) {
-                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.FailedActions + "</span></span></td>";
+                    failed_html = "<span style='text-align:center;'><span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.FailedActions + "</span></span></span>";
                   } else {
-                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.FailedActions + "</span></span></td>";
+                    failed_html = "<span style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.FailedActions + "</span></span></span>";
                   }
+                  html_json.failed_html = failed_html;
 
                   if(TimeoutActions > 0) {
-                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.TimeoutActions + "</span></span></td>";
+                    timedout_html = "<span style='text-align:center;'><span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.TimeoutActions + "</span></span></span>";
                   } else {
-                    ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.TimeoutActions + "</span></span></td>";
+                    timedout_html = "<span style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.TimeoutActions + "</span></span></span>";
                   }
+                  html_json.timedout_html = timedout_html;
 
-                  ihtml += "<td title='" + operations + "' style='text-align:center;'><span class='mdl-chip mdl-color--blue-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.TotalActions + "</span></span></td>";
+                  total_html = "<span title='" + operations + "' style='text-align:center;'><span class='mdl-chip mdl-color--blue-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + wfs[wf].Statistics.TotalActions + "</span></span></span>";
+                  html_json.total_html = total_html;
 
-                  ihtml += "<td style='text-align:center;'>" + status_html + "</td>";
-                  ihtml += "<td title='" + error_msg + "' style='text-align:center;'>" + process_html + "</td>";
-                  // ihtml += "<td style='text-align:center;'>" + error_msg + "</td>";
-                  ihtml += "<td style='text-align:center;'>" + wfs[wf].StartedOn + "</td>";
-                  ihtml += "<td style='text-align:center;'>" + wfs[wf].CompletedOn + "</td></tr>";
-                }
-                document.getElementById("workflows").innerHTML = ihtml;
+                  html_json.status_html = status_html;
+
+                  process_plus_html = "<span title='" + error_msg + "' style='text-align:center;'>" + process_html + "</span>";
+                  html_json.process_plus_html = process_plus_html;
+
+                  started_html = "<span style='text-align:center;'>" + wfs[wf].StartedOn + "</span>";
+                  html_json.started_html = started_html;
+
+                  ended_html = "<span style='text-align:center;'>" + wfs[wf].CompletedOn + "</span>";
+                  html_json.ended_html = ended_html;
+                  
+                  html_data.push(html_json);
+                }                
+                //document.getElementById("workflows").innerHTML = ihtml;
                 document.getElementById("jobs_loader").innerHTML = "";
-                componentHandler.upgradeAllRegistered();
-                componentHandler.upgradeDom();
                 
-                $('#jobs_table').DataTable( {
-                    // retrieve: true,
-                    destroy: true,
-                    autoWidth: true,
-                    pagingType: "full_numbers",
-                    ordering: true,
-                    info: true,
-                    order: [[ 9, "desc" ]],
-                    scrollY: "44vh",
-                    scrollCollapse: true,
-                    paging: true,
-                    scrollX: true,
-                    lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
-                    searching: true,
-                    columnDefs: [
-                        {
-                            targets: ['_all'],
-                            className: 'mdc-data-table__cell'
-                        }
-                    ]
-                });
+                var jobs_table = $('#jobs_table').DataTable();
+                jobs_table.clear();
+                jobs_table.rows.add(html_data).draw();                
             }).catch( function(result){
                 alert("Error: " + JSON.stringify(result));
-            });
+            });        
+      }
+
+      function get_image_workflow_runs() {
+        //document.getElementById("image_workflows").innerHTML = "";
+        
+        image_jobs_loader();
+
+        var apigClientImage = apigImageClientFactory.newClient({
+            apiKey: 'fUUiAMN20C3df9WfuoGGq9edotyJRDCt62E04IiC'
+        });
+
+        var imageParams = {
+            //This is where any header, path, or querystring request imageParams go. The key is the parameter named as defined in the API
+        };
+        var body = {
+            //This is where you define the body of the request
+        };
+
+        var additionalimageParams = {
+            //If there are any unmodeled query parameters or headers that need to be sent with the request you can add them here
+            headers: {
+            },
+            queryParams: {
+                // param0: '',
+                // param1: ''
+            }
+        };
+
+        apigClientImage.rootGet(imageParams, body, additionalimageParams)
+          .then(function(wfs){                    
+              // alert("Response: " + JSON.stringify(wfs));
+              var html_data = [];
+              var ihtml="";
+              wfs = wfs.data.Runs;
+              // alert("wfs: " + wfs);
+              count = wfs.length + 1;
+              for (wf in wfs) {
+                var html_json = {};
+
+                count = count - 1;
+                
+                JobId = wfs[wf].JobId;
+                NumberOfTasksSucceeded = parseInt(wfs[wf].ProgressSummary.NumberOfTasksSucceeded);
+                NumberOfTasksFailed = parseInt(wfs[wf].ProgressSummary.NumberOfTasksFailed);
+                TotalNumberOfTasks = parseInt(wfs[wf].ProgressSummary.TotalNumberOfTasks);
+                //RunningActions = TotalNumberOfTasks - NumberOfTasksSucceeded;
+                Status = wfs[wf].Status;
+                CreationTime = wfs[wf].CreationTime;
+
+                Description = wfs[wf].Description;
+                if (!Description.includes("->")) {
+                  Description = "NA/NA -> NA/NA";
+                }
+
+                description_split = Description.split("->");
+                
+                src_s3 = description_split[0].trim();
+                if(src_s3.substr(-1) == "/") {
+                  src_s3 = src_s3.slice(0, -1);
+                }
+                
+                dst_s3 = description_split[1].trim();
+                if(dst_s3.substr(-1) == "/") {
+                  dst_s3 = dst_s3.slice(0, -1);
+                }
+
+                src_bucket = src_s3.split("/")[0].trim();
+                dst_bucket = dst_s3.split("/")[0].trim();                
+                if (Description != "NA/NA -> NA/NA") {
+                  src_bucket = "S3";
+                  dst_bucket = "S3";
+                }                
+
+                final_dst_s3 = dst_s3 + "/" + src_s3.substring(src_s3.indexOf('/')+1);
+
+                operations = "S3 Batch";
+                error_msg = undefined;
+
+                count_html = "<a href='https://s3.console.aws.amazon.com/s3/jobs/" + JobId + "?region=ap-southeast-1'" + " target='_blank'><span class='mdl-chip mdl-color--light-blue-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + count + "</span></span><i class='material-icons'>open_in_new</i></a>";
+
+                src_html = "<a href='https://s3.console.aws.amazon.com/s3/buckets/" + src_s3 + "/?region=ap-southeast-1'" + " target='_blank'><span class='mdl-chip mdl-color--orange-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + src_bucket + "</span></span><i class='material-icons'>open_in_new</i></a>";
+
+                dst_html = "<a href='https://s3.console.aws.amazon.com/s3/buckets/" + final_dst_s3 + "/?region=ap-southeast-1'" + " target='_blank'><span class='mdl-chip mdl-color--orange-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + dst_bucket + "</span></span><i class='material-icons'>open_in_new</i></a>";
+
+                image_links_html = "<a href='https://dpimages.crayondata.com/high-res-image/cdf_onboard/image_file/" + JobId + "' target='_blank'><span class='mdl-chip mdl-color--cyan mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + TotalNumberOfTasks + "</span></span><i class='material-icons'>cloud_download</i></a>";
+
+                report_html = "<a href='https://dpimages.crayondata.com/high-res-image/cdf_onboard/s3_batch/report/job-" + JobId + "/results/?region=ap-southeast-1' target='_blank'><i class='material-icons'>report</i></a>";
+                
+                if(Status == "New") {
+                  status_html = "<span class='mdl-chip mdl-color--light-blue-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Status + "</span></span>";
+                } else if(Status == "Complete") {
+                  status_html = "<span class='mdl-chip mdl-color--green-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Status + "</span></span>";
+                } else if(Status == "Failing" || Status == "Cancelling") {
+                  status_html = "<span class='mdl-chip mdl-color--amber-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Status + "</span></span>";
+                } else if(Status == "Pausing" || Status == "Completing" || Status == "Preparing") {
+                  status_html = "<span class='mdl-chip mdl-color--orange-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Status + "</span></span>";
+                } else if(Status == "Active" || Status == "Ready") {
+                  status_html = "<span class='mdl-chip mdl-color--yellow-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Status + "</span></span>";
+                } else if(Status == "Failed" || Status == "Suspended" || Status == "Cancelled") {
+                  status_html = "<span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Status + "</span></span>";
+                } else if(Status == "Paused") {
+                  status_html = "<span class='mdl-chip mdl-color--grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Status + "</span></span>";
+                } else {
+                  status_html = "<span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>Unknown</span></span>";
+                }
+
+                if (NumberOfTasksFailed > 0 || Status == "Cancelled" || Status == "Failed" || Status == "Suspended") {
+                  Process = "Failed";
+                  process_html = "<span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                } else if ((TotalNumberOfTasks == NumberOfTasksSucceeded) && Status == "Complete") {
+                  Process = "Success";
+                  process_html = "<span class='mdl-chip mdl-color--green-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                } else {
+                  Process = "Unknown";
+                  process_html = "<span class='mdl-chip mdl-color--grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + Process + "</span></span>";
+                }
+                
+                job_html = "<span data-toggle='tooltip' title='S3 BatchId => " + JobId + "' style='text-align:center;'>" + count_html + "</span>";
+                // job_html = count_html;
+                html_json.job_html = job_html;
+                html_json.job_id = JobId;
+                ihtml += job_html;
+                
+                s3_src_html = "<span title='" + src_s3 + "' style='text-align:center;'>" + src_html + "</span>";
+                // s3_src_html = src_html;
+                html_json.s3_src_html = s3_src_html;
+                html_json.src_s3 = src_s3;
+                ihtml += s3_src_html;
+
+                s3_dst_html = "<span title='" + dst_s3 + "' style='text-align:center;'>" + dst_html + "</span>";
+                // s3_dst_html = dst_html;
+                html_json.s3_dst_html = s3_dst_html;
+                html_json.dst_s3 = dst_s3;
+                ihtml += s3_dst_html;
+
+                /*if(TotalNumberOfTasks > 0 && TotalNumberOfTasks!= NumberOfTasksSucceeded) {
+                  ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--yellow-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + RunningActions + "</span></span></td>";
+                } else {
+                  ihtml += "<td style='text-align:center;'><span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + RunningActions + "</span></span></td>";
+                }*/
+
+                if((NumberOfTasksSucceeded > 0) && (TotalNumberOfTasks == NumberOfTasksSucceeded)) {
+                  success_html = "<span class='mdl-chip mdl-color--light-green-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + NumberOfTasksSucceeded + "</span></span>";
+                } else if(NumberOfTasksSucceeded > 0) {
+                  success_html = "<span class='mdl-chip mdl-color--orange-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + NumberOfTasksSucceeded + "</span></span>";
+                } else if(NumberOfTasksSucceeded == 0 ) {
+                  success_html = "<span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + NumberOfTasksSucceeded + "</span></span>";
+                } else {
+                  success_html = "<span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + NumberOfTasksSucceeded + "</span></span>";
+                }
+                html_json.success_html = success_html;
+                ihtml += success_html;
+
+                if(NumberOfTasksFailed > 0) {
+                  fail_html = "<span class='mdl-chip mdl-color--red-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + NumberOfTasksFailed + "</span></span>";
+                } else {
+                  fail_html = "<span class='mdl-chip mdl-color--light-grey-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + NumberOfTasksFailed + "</span></span>";
+                }
+                html_json.fail_html = fail_html;
+                ihtml += fail_html;
+
+                total_html = "<span class='mdl-chip mdl-color--blue-400 mdl-shadow--4dp'><span class='mdl-chip__text mdl-color-text--black'>" + TotalNumberOfTasks + "</span></span>";
+                html_json.total_html = total_html;
+                html_json.operations = operations;
+                ihtml += total_html;
+
+                html_json.status_html = status_html;
+                ihtml += status_html;
+
+                html_json.process_html = process_html;
+                ihtml += process_html;
+
+                html_json.image_links_html = image_links_html;
+                ihtml += image_links_html;
+
+                html_json.report_html = report_html;
+                ihtml += report_html;
+
+                started_html = CreationTime;
+                html_json.started_html = started_html;
+                ihtml += started_html;
+
+                ended_html = CreationTime;
+                html_json.ended_html = ended_html;
+                ihtml += ended_html;
+
+                html_data.push(html_json);
+              }
+              
+              // document.getElementById("image_workflows").innerHTML = ihtml;
+              document.getElementById("image_jobs_loader").innerHTML = "";
+
+              var image_jobs_table = $('#image_jobs_table').DataTable();
+              image_jobs_table.clear();
+              image_jobs_table.rows.add(html_data).draw();
+          }).catch( function(result){
+              alert("Error: " + JSON.stringify(result));
+          });
       }
 
       function post_workflow(file_content, form_body) {
@@ -607,16 +1071,66 @@
               //   dialog.close();
               // });
 
-              document.getElementById("folder_name").value = "";
-              document.getElementById("prefix").value = "";
-              document.getElementById("db_name").value = "";
-              document.getElementById("mapping_file").value = "";
-              document.getElementById("mapping_file_text").value = "";
+              // document.getElementById("folder_name").value = "";
+              // document.getElementById("prefix").value = "";
+              // document.getElementById("db_name").value = "";
+              // document.getElementById("mapping_file").value = "";
+              // document.getElementById("mapping_file_text").value = "";
           }).catch( function(result){
-              alert("Error: " + JSON.stringify(result));
+              // alert("Error: " + JSON.stringify(result));
               stop_loader();
+              alert("Successfully scheduled Job for Data Onboarding. Head over to 'DATA JOBS' tab for the status");
           });
-      }    
+      }
+
+      function image_post_workflow(form_body) {
+        var apigClientImage = apigImageClientFactory.newClient({
+            apiKey: 'fUUiAMN20C3df9WfuoGGq9edotyJRDCt62E04IiC'
+        });
+
+        var params = {
+            //This is where any header, path, or querystring request params go. The key is the parameter named as defined in the API
+        };
+
+        var body = {
+            //This is where you define the body of the request
+            "source_image_path": decodeURIComponent(form_body.src_s3_name).trim(),
+            "destination_image_path": decodeURIComponent(form_body.dst_s3_name).trim()
+        };
+
+        var additionalParams = {
+            //If there are any unmodeled query parameters or headers that need to be sent with the request you can add them here
+            headers: {
+            },
+            queryParams: {
+                // param0: '',
+                // param1: ''
+            }
+        };
+
+        apigClientImage.rootPost(params, body, additionalParams)
+          .then(function(result){
+              image_stop_loader();
+
+              // alert("Response: " + JSON.stringify(result));
+              alert(result.data);
+              
+              // showDialogButton.addEventListener('click', function() {
+              //   dialog.showModal();
+              // });
+              
+              // dialog.querySelector('.close').addEventListener('click', function() {
+              //   dialog.close();
+              // });
+
+              // document.getElementById("src_s3_name").value = "";
+              // document.getElementById("dst_s3_name").value = "";
+          }).catch( function(result){
+              // alert("Error: " + JSON.stringify(result));              
+              image_stop_loader();
+              alert("Successfully scheduled Job for Image Onboarding. Head over to 'IMAGE JOBS' tab for the status");
+          });
+      }
 
       $('button#schedule').click( function() {
 
@@ -674,7 +1188,7 @@
           
           var file_content;
           if ( input.files && input.files[0] ) {
-            alert("Mapping file available");
+            console.log("Mapping file available");
             // alert("Url: " + fr.readAsDataURL( file ));
           } else {
             // Handle errors here
@@ -711,6 +1225,35 @@
         else {
           post_workflow("", form_body);
         }
+      });
+
+      $('button#image_schedule').click( function() {
+
+        const queryStringToObject = (queryString) => {
+          let obj = {}
+          if(queryString) {
+            queryString.slice(0).split('&').map((item) => {
+              const [ k, v ] = item.split('=')
+              v ? obj[k] = v : null
+            })
+          }
+          return obj
+        }        
+
+        form_body = queryStringToObject($('form#image_schedule_form').serialize());
+
+        if(form_body.src_s3_name == undefined) {
+            image_stop_loader();
+            return alert("Source S3 Image path is mandatory!!!");
+        }
+
+        if(form_body.dst_s3_name == undefined) {
+            image_stop_loader();
+            return alert("Destination S3 Image path is mandatory!!!");
+        } 
+        
+        image_post_workflow(form_body);
+
       });
     </script>
   </body>
